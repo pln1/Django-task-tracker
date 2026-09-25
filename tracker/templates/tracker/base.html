@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>{% block title %}{% endblock %}</title>
+    </head>
+    <body>
+        <header>
+            <div class="site_logo">
+
+            </div>
+            <div class="header_bar">
+                <nav>
+                    <a href="/boards/">Boards</a>
+    
+                    {% if user.is_authenticated %}
+                        <a href="/logout/">Log out</a>
+
+                    <div style="display: inline-block; position: relative; margin-left: 15px;">
+                        <button>Profile ▾</button>
+                        <div style="border: 1px solid black; padding: 10px; position: absolute; z-index: 10; background: white; margin-top: 5px;">
+                            <p>Login: {{ user.username }}</p>
+                            <p>ID: {{ user.id }}</p>
+                        </div>
+                    </div>
+
+                    {% else %}
+                        <a href="/signup/">Sign up</a>
+                        <a href="/login/">Log in</a>
+                    {% endif %}
+                </nav>
+            </div>
+        </header>
+        <main>
+            {% block content %}
+
+            {% endblock %}
+        </main>
+    </body>
+</html>

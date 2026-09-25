@@ -1,0 +1,31 @@
+{% extends 'tracker/base.html' %}
+
+{% block title %}Sign up{% endblock %}
+
+{% block content %}
+    <h2>Create an Account</h2>
+    {% if error %}
+        <div style="background-color: #f8d7da; color: #721c24; padding: 15px; margin-bottom: 20px; border: 1px solid #f5c6cb; border-radius: 5px;">
+            <strong>Registration failed!</strong> {{ error }}
+        </div>
+    {% endif %}
+
+    <form method="POST">
+        {% csrf_token %}
+        
+        <div style="margin-bottom: 10px;">
+            <label>Username:</label>
+            <input type="text" name="username" required>
+        </div>
+        <div style="margin-bottom: 10px;">
+            <label>Email:</label>
+            <input type="email" name="email" required>
+        </div>
+        <div style="margin-bottom: 10px;">
+            <label>Password:</label>
+            <input type="password" name="password" required>
+        </div>
+        
+        <button type="submit">Sign up</button>
+    </form>
+{% endblock %}

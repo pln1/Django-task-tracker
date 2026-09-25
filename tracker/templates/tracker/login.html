@@ -1,0 +1,33 @@
+{% extends 'tracker/base.html' %}
+
+{% block title %}Log in{% endblock %}
+
+{% block content %}
+    <h2>Log in to your account</h2>
+    {% if error %}
+        <div style="background-color: #f8d7da; color: #721c24; padding: 15px; margin-bottom: 20px; border: 1px solid #f5c6cb; border-radius: 5px;">
+            <strong>Error!</strong> {{ error }}
+            
+            {% if show_signup_link %}
+                <br>Please check your credentials or 
+                <a href="/signup/" style="color: #721c24; text-decoration: underline; font-weight: bold;">sign up</a> 
+                if you don't have an account.
+            {% endif %}
+        </div>
+    {% endif %}
+    
+    <form method="POST">
+        {% csrf_token %}
+        
+        <div style="margin-bottom: 10px;">
+            <label>Username:</label>
+            <input type="text" name="username" required>
+        </div>
+        <div style="margin-bottom: 10px;">
+            <label>Password:</label>
+            <input type="password" name="password" required>
+        </div>
+        
+        <button type="submit">Log in</button>
+    </form>
+{% endblock %}

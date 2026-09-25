@@ -1,0 +1,24 @@
+{% extends 'tracker/base.html' %}
+
+{% block title %}Create new board{% endblock %}
+
+{% block content %}
+    <h2>Create a new board</h2>
+    
+    <div style="border: 1px solid #ccc; padding: 20px; border-radius: 8px; width: 400px; margin-top: 20px;">
+        <form method="POST">
+            {% csrf_token %}
+            
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px;">Board Name:</label>
+                <input type="text" name="board_name" required style="width: 100%; padding: 8px; box-sizing: border-box;">
+            </div>
+            
+            <p style="color: gray; font-size: 14px;">Access rights settings will be added here later.</p>
+            
+            <button type="submit" style="padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                Create Board
+            </button>
+        </form>
+    </div>
+{% endblock %}

@@ -13,3 +13,14 @@ __pycache__/
 
 # SQLite
 db.sqlite3
+
+# Git
+.git/
+.gitignore
+
+# Readme
+REAGME.md
+
+# Docker
+Dockerfile
+docker-compose.yml

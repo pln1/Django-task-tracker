@@ -1,0 +1,29 @@
+{% extends 'tracker/base.html' %}
+
+{% block title %}Your boards{% endblock %}
+
+{% block content %}
+    <h2>Your boards</h2>
+    
+    <!-- Контейнер для карток (Flexbox) -->
+    <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 20px;">
+        
+        <!-- Картки існуючих дошок -->
+        {% for board in boards %}
+            <a href="/boards/{{ board.id }}/" style="display: flex; flex-direction: column; width: 220px; height: 130px; border: 1px solid #d1d5db; border-radius: 8px; text-decoration: none; color: black; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                <!-- Верхня синя частина -->
+                <div style="background-color: #dbeafe; flex-grow: 1;"></div>
+                <!-- Нижня біла частина з текстом -->
+                <div style="background-color: white; padding: 12px; font-size: 16px;">
+                    {{ board.name }}
+                </div>
+            </a>
+        {% endfor %}
+
+        <!-- Кнопка створення нової дошки -->
+        <a href="/boards/create/" style="display: flex; align-items: center; justify-content: center; width: 220px; height: 130px; background-color: #e5e7eb; border-radius: 8px; text-decoration: none; color: #6b7280; font-size: 40px; transition: background-color 0.2s;">
+            +
+        </a>
+        
+    </div>
+{% endblock %}
