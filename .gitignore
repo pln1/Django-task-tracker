@@ -13,3 +13,7 @@ __pycache__/
 
 # SQLite
 db.sqlite3
+
+#media
+media/
+avatars/

@@ -1,0 +1,26 @@
+{% extends 'tracker/base.html' %}
+{% block title %}Edit Profile - KanbanFlow{% endblock %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 40px auto; background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); padding: 40px;">
+    <h2 style="margin: 0 0 24px 0; color: #172b4d;">Edit Profile</h2>
+
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; font-weight: bold; color: #4a5568; margin-bottom: 8px;">Profile Picture</label>
+            <input type="file" name="avatar" accept="image/*" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;">
+        </div>
+
+        <div style="margin-bottom: 25px;">
+            <label style="display: block; font-weight: bold; color: #4a5568; margin-bottom: 8px;">Bio</label>
+            <textarea name="bio" rows="5" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 6px; box-sizing: border-box; font-family: inherit;">{{ request.user.profile.bio|default_if_none:'' }}</textarea>
+        </div>
+        
+        <div style="display: flex; gap: 10px;">
+            <button type="submit" style="flex-grow: 1; background: #22c55e; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer;">Save Changes</button>
+            <a href="{% url 'profile' username=request.user.username %}" style="padding: 12px 20px; background: #e2e8f0; color: #4a5568; text-decoration: none; border-radius: 6px; font-weight: bold;">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

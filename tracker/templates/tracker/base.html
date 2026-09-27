@@ -1,39 +1,169 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <title>{% block title %}{% endblock %}</title>
-    </head>
-    <body>
-        <header>
-            <div class="site_logo">
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}KanbanFlow{% endblock %}</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #ffffff;
+            padding: 15px 40px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .navbar-brand {
+            font-size: 24px;
+            font-weight: 800;
+            color: #007bff;
+            text-decoration: none;
+        }
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .nav-links a {
+            text-decoration: none;
+            color: #4a5568;
+            font-weight: 600;
+            transition: color 0.2s;
+        }
+        .nav-links a:hover {
+            color: #007bff;
+        }
+        .btn-nav {
+            background-color: #007bff;
+            color: white !important;
+            padding: 8px 16px;
+            border-radius: 6px;
+        }
+        .btn-nav:hover {
+            background-color: #0056b3;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        
+        .profile-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .profile-dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            background-color: #ffffff;
+            min-width: 180px;
+            box-shadow: 0px 8px 16px rgba(0,0,0,0.1);
+            z-index: 999;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #edf2f7;
+            margin-top: 10px;
+        }
+        .profile-dropdown:hover .profile-dropdown-content {
+            display: block;
+        }
+        .profile-dropdown-content a, .profile-dropdown-content div {
+            color: #333;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+        .profile-dropdown-content button {
+            width: 100%;
+            text-align: left;
+            padding: 12px 16px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #e53e3e;
+            font-weight: bold;
+        }
+        .profile-dropdown-content button:hover, .profile-dropdown-content a:hover {
+            background-color: #f7fafc;
+        }
 
-            </div>
-            <div class="header_bar">
-                <nav>
-                    <a href="/boards/">Boards</a>
-    
-                    {% if user.is_authenticated %}
-                        <a href="/logout/">Log out</a>
+        /* Глобальні стилі для форм */
+        .form-control {
+            width: 100%;
+            padding: 10px 12px;
+            margin-bottom: 15px;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+        .btn-submit {
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .btn-submit:hover {
+            background-color: #0056b3;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+            flex: 1;
+            width: 100%;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar" style="height: 65px; box-sizing: border-box;">
+        <a href="/" class="navbar-brand">KanbanFlow</a>
+        <div class="nav-links">
+            {% if user.is_authenticated %}
+                <a href="/boards/" style="font-weight: 600;">Workspaces</a>
+                <div class="profile-dropdown">
+                    <a href="/profile/{{ user.username }}/" class="btn-nav" style="display: flex; align-items: center; gap: 8px;">
+                        {% if user.profile and user.profile.avatar %}
+                        <img src="{{ user.profile.avatar.url }}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;">
+                        {% else %}
+                        <span style="font-size: 16px;">👤</span>
+                        {% endif %}
+                        {{ user.username }}
+                    </a>
+                </div>
+            {% else %}
+                <a href="{% url 'login' %}">Log in</a>
+                <a href="{% url 'signup' %}" class="btn-nav">Sign up</a>
+            {% endif %}
+        </div>
+    </nav>
 
-                    <div style="display: inline-block; position: relative; margin-left: 15px;">
-                        <button>Profile ▾</button>
-                        <div style="border: 1px solid black; padding: 10px; position: absolute; z-index: 10; background: white; margin-top: 5px;">
-                            <p>Login: {{ user.username }}</p>
-                            <p>ID: {{ user.id }}</p>
-                        </div>
-                    </div>
-
-                    {% else %}
-                        <a href="/signup/">Sign up</a>
-                        <a href="/login/">Log in</a>
-                    {% endif %}
-                </nav>
-            </div>
-        </header>
-        <main>
-            {% block content %}
-
-            {% endblock %}
-        </main>
-    </body>
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+</body>
 </html>

@@ -1,49 +1,398 @@
 {% extends 'tracker/base.html' %}
-
-{% block title %}{{ board.name }}{% endblock %}
+{% block title %}{{ board.name }} - KanbanFlow{% endblock %}
 
 {% block content %}
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h2>Board: {{ board.name }}</h2>
-        <a href="/boards/" style="text-decoration: none; color: #007bff;">← Back to boards</a>
-    </div>
+<style>
+    body, html { overflow: hidden !important; margin: 0; padding: 0; height: 100vh; background-color: #f4f5f7; } 
+    
+    .page-wrapper {
+        position: fixed;
+        top: 65px; 
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex; 
+        gap: 15px; 
+        padding: 10px 15px 15px 15px;
+        box-sizing: border-box;
+    }
+    
+    .board-root {
+        flex: 1 1 auto; 
+        min-width: 0; 
+        background: linear-gradient(180deg, #0079bf, #005a8f);
+        border-radius: 8px; 
+        display: flex; 
+        flex-direction: column; 
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+        height: 100%;
+    }
 
-    <!-- Контейнер для Канбан-дошки (горизонтальний скрол) -->
-    <div style="display: flex; gap: 20px; overflow-x: auto; padding: 20px 0; align-items: flex-start; min-height: 70vh;">
-        
-        <!-- Існуючі колонки -->
-        {% for column in columns %}
-            <div style="background-color: #f4f5f7; min-width: 270px; width: 270px; border-radius: 8px; padding: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
-                <h3 style="margin-top: 0; font-size: 16px; color: #333;">{{ column.name }}</h3>
-                
-                <!-- Список задач у колонці -->
-                <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;">
-                    {% for task in column.tasks.all %}
-                        <div style="background-color: white; padding: 10px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.15); font-size: 14px;">
-                            <strong>{{ task.name }}</strong>
-                        </div>
-                    {% empty %}
-                        <span style="color: #888; font-size: 12px;">No tasks yet</span>
-                    {% endfor %}
+    .board-navbar {
+        padding: 10px 16px; 
+        display: flex; justify-content: space-between;
+        align-items: center; 
+        background: rgba(0, 0, 0, 0.2); 
+        color: white; 
+        flex-shrink: 0;
+        border-radius: 8px 8px 0 0;
+        gap: 15px;
+    }
+    
+    .board-navbar h2 { 
+        font-size: 18px; margin: 0; font-weight: 700; 
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 600px;
+    }
+
+    .board-scroll-area {
+        flex: 1 1 auto; min-height: 0; 
+        display: flex; gap: 12px; padding: 12px 16px;
+        overflow-x: auto; overflow-y: hidden; 
+        align-items: flex-start; 
+    }
+    
+    .board-scroll-area::-webkit-scrollbar { height: 14px; }
+    .board-scroll-area::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.5); border-radius: 7px; border: 2px solid transparent; background-clip: padding-box; }
+    .board-scroll-area::-webkit-scrollbar-track { background: rgba(0,0,0,0.15); border-radius: 7px; margin: 0 16px; }
+
+    .board-column {
+        flex: 0 0 272px; width: 272px; max-height: 100%;
+        background: #ebecf0; border-radius: 8px; display: flex; flex-direction: column; cursor: grab;
+    }
+    .board-column.dragging { opacity: 0.5; }
+    
+    /* Обрізка довгої назви колонки */
+    .column-header { padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; color: #172b4d; flex-shrink: 0; }
+    .column-header span.col-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-grow: 1; margin-right: 8px; }
+
+    .card-list {
+        flex: 1 1 auto; padding: 0 8px; overflow-y: auto; overflow-x: hidden;
+        display: flex; flex-direction: column; gap: 8px; min-height: 5px;
+    }
+    .card-list::-webkit-scrollbar { width: 6px; }
+    .card-list::-webkit-scrollbar-thumb { background: #c1c7d0; border-radius: 3px; }
+
+    .kanban-card {
+        background: #ffffff; border-radius: 8px; padding: 10px; box-shadow: 0 1px 2px rgba(9,30,66,0.15);
+        color: #172b4d; cursor: grab; border-left: 4px solid transparent;
+    }
+    .kanban-card:hover { border-color: #0079bf; }
+    .kanban-card.dragging { opacity: 0.5; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+    .kanban-card.is-done { border-left-color: #22c55e; background-color: #f0fdf4; opacity: 0.8; }
+    
+    .task-name-text { font-size: 14px; font-weight: 500; word-break: break-word; overflow-wrap: anywhere; }
+    .task-name-text.done { text-decoration: line-through; color: #6b7280; }
+
+    .task-description-clamp {
+        display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2;
+        -webkit-box-orient: vertical; overflow: hidden;
+        white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere; 
+        line-height: 1.4; color: #4b5563; font-size: 12px;
+    }
+    .task-description-clamp.expanded { display: block; overflow: visible; -webkit-line-clamp: unset; line-clamp: unset; }
+    .more-btn, .less-btn { color: #0079bf; cursor: pointer; display: inline-block; margin-top: 4px; font-weight: 500; font-size: 12px; }
+
+    .column-footer { padding: 8px; flex-shrink: 0; }
+    .column-footer input { width: 100%; box-sizing: border-box; border: none; padding: 8px; border-radius: 6px; background: transparent; outline: none; cursor: pointer; }
+    .column-footer input:focus { background: white; box-shadow: 0 1px 2px rgba(0,0,0,0.1); cursor: text; }
+
+    .sidebar {
+        flex: 0 0 300px; width: 300px; background: white; border-radius: 8px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; 
+        height: 100%; overflow: hidden;
+    }
+    .sidebar-header { padding: 12px 16px; border-bottom: 1px solid #edf2f7; font-weight: bold; background: #f8fafc; }
+    .sidebar-content { padding: 16px; overflow-y: auto; flex: 1; font-size: 14px; }
+    .participant-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #edf2f7; }
+
+    .dropdown { position: relative; }
+    .dot-btn { background: none; border: none; font-size: 16px; cursor: pointer; color: #5e6c84; padding: 2px 6px; }
+    .dropdown-menu { display: none; position: absolute; right: 0; top: 100%; background: white; min-width: 160px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border-radius: 6px; z-index: 100; overflow: hidden; }
+    .dropdown.active .dropdown-menu { display: block; }
+    .dropdown-menu a, .dropdown-menu button { display: block; width: 100%; text-align: left; padding: 8px 12px; border: none; background: none; font-size: 13px; cursor: pointer; color: #172b4d; text-decoration: none; }
+    .dropdown-menu a:hover, .dropdown-menu button:hover { background: #f4f5f7; }
+    .danger { color: #dc2626 !important; }
+
+    .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-top: 8px; letter-spacing: 0.3px; }
+    .b-success { background: #dcfce7; color: #16a34a; }
+    .b-danger { background: #fee2e2; color: #dc2626; }
+    .b-neutral { background: #f1f5f9; color: #475569; }
+</style>
+
+<div class="page-wrapper">
+    <div class="board-root">
+        <div class="board-navbar">
+            <h2 title="{{ board.name }}">{{ board.name }}</h2>
+            <div class="dropdown" id="menu-board">
+                <button class="dot-btn" style="color: white;" onclick="toggleMenu('board')">⋯</button>
+                <div class="dropdown-menu">
+                    {% if is_owner %}
+                    <button onclick="renameItem('board', '{{ board.id }}', '{{ board.name|escapejs }}')">Rename Board</button>
+                    <form method="POST" action="/boards/{{ board.id }}/delete/" style="margin: 0;">
+                        {% csrf_token %}
+                        <button type="submit" class="danger">Delete Board</button>
+                    </form>
+                    {% endif %}
                 </div>
+            </div>
+        </div>
 
-                <!-- Форма додавання задачі -->
-                <form method="POST" action="/columns/{{ column.id }}/add_task/" style="display: flex; gap: 5px;">
+        <div class="board-scroll-area" id="boardCanvas">
+            {% for column in columns|dictsort:"position" %}
+                <div class="board-column" draggable="true" data-id="{{ column.id }}">
+                    <div class="column-header">
+                        <span class="col-name" title="{{ column.name }}">{{ column.name }}</span>
+                        {% if can_edit %}
+                        <div class="dropdown" id="menu-col-{{ column.id }}">
+                            <button class="dot-btn" onclick="toggleMenu('col-{{ column.id }}')">⋯</button>
+                            <div class="dropdown-menu">
+                                <button onclick="renameItem('column', '{{ column.id }}', '{{ column.name|escapejs }}')">Rename List</button>
+                                <form method="POST" action="/columns/{{ column.id }}/delete/" style="margin: 0;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="danger">Delete List</button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="card-list" data-column-id="{{ column.id }}">
+                        {% for task in column.tasks.all|dictsort:"position" %}
+                            <div class="kanban-card {% if task.status %}is-done{% endif %}" draggable="true" data-id="{{ task.id }}">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                    <div style="display: flex; gap: 8px; flex-grow: 1; align-items: flex-start;">
+                                        {% if can_edit %}
+                                        <form method="POST" action="/tasks/{{ task.id }}/toggle/" style="margin: 0;">
+                                            {% csrf_token %}
+                                            <input type="checkbox" onchange="this.form.submit()" {% if task.status %}checked{% endif %} style="margin-top: 2px;">
+                                        </form>
+                                        {% endif %}
+                                        <span class="task-name-text {% if task.status %}done{% endif %}">{{ task.name }}</span>
+                                    </div>
+                                    
+                                    {% if can_edit %}
+                                    <div class="dropdown" id="menu-task-{{ task.id }}">
+                                        <button class="dot-btn" onclick="toggleMenu('task-{{ task.id }}')">⋯</button>
+                                        <div class="dropdown-menu">
+                                            <a href="/tasks/{{ task.id }}/edit/">Edit Details</a>
+                                            <button onclick="renameItem('task', '{{ task.id }}', '{{ task.name|escapejs }}')">Quick Rename</button>
+                                            <form method="POST" action="/tasks/{{ task.id }}/delete/" style="margin: 0;">
+                                                {% csrf_token %}
+                                                <button type="submit" class="danger">Delete Card</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                {% if task.description %}
+                                <div style="margin-top: 10px;">
+                                    <div id="desc-{{ task.id }}" class="task-description-clamp">{{ task.description }}</div>
+                                    <div class="more-less-container" style="display: none;">
+                                        <span class="more-btn" onclick="document.getElementById('desc-{{ task.id }}').classList.add('expanded'); this.style.display='none'; this.nextElementSibling.style.display='inline-block';">More</span>
+                                        <span class="less-btn" style="display: none;" onclick="document.getElementById('desc-{{ task.id }}').classList.remove('expanded'); this.style.display='none'; this.previousElementSibling.style.display='inline-block';">Less</span>
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                {% if task.deadline or task.start_date %}
+                                <div>
+                                    {% if task.status %}
+                                        <span class="badge b-success">✅ Done: {{ task.deadline|date:"M d, H:i" }}</span>
+                                    {% else %}
+                                        <span class="badge dynamic-date" 
+                                              data-start="{% if task.start_date %}{{ task.start_date|date:'c' }}{% endif %}" 
+                                              data-deadline="{% if task.deadline %}{{ task.deadline|date:'c' }}{% endif %}">
+                                        </span>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    {% if can_edit %}
+                    <div class="column-footer">
+                        <form method="POST" action="/columns/{{ column.id }}/add_task/" style="margin: 0;">
+                            {% csrf_token %}
+                            <input type="text" name="task_name" placeholder="+ Add a card" required>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+
+            {% if can_edit %}
+            <div style="min-width: 272px;">
+                <form method="POST" action="/boards/{{ board.id }}/add_column/" style="background: rgba(255,255,255,0.2); border-radius: 8px; padding: 8px; margin: 0;">
                     {% csrf_token %}
-                    <input type="text" name="task_name" placeholder="Add a task..." required style="flex-grow: 1; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
-                    <button type="submit" style="padding: 6px 10px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">+</button>
+                    <input type="text" name="column_name" placeholder="+ Add another list" required style="width: 100%; box-sizing: border-box; border: none; background: transparent; color: white; font-weight: bold; outline: none; padding: 4px;">
                 </form>
             </div>
-        {% endfor %}
-
-        <!-- Форма додавання нової колонки -->
-        <div style="min-width: 270px; width: 270px; background-color: #ebecf0; border-radius: 8px; padding: 10px;">
-            <form method="POST" action="/boards/{{ board.id }}/add_column/" style="display: flex; flex-direction: column; gap: 8px;">
-                {% csrf_token %}
-                <input type="text" name="column_name" placeholder="Add another list..." required style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-                <button type="submit" style="padding: 8px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">Add List</button>
-            </form>
+            {% endif %}
         </div>
-        
     </div>
+
+    <div class="sidebar">
+        <div class="sidebar-header">Team & Permissions</div>
+        <div class="sidebar-content">
+            {% for participant in participants %}
+                <div class="participant-item">
+                    <div><strong style="color: #111827;">{{ participant.user.username }}</strong></div>
+                    {% if is_owner and participant.user != request.user %}
+                        <form method="POST" action="/boards/{{ board.id }}/update_role/{{ participant.id }}/" style="margin: 0;">
+                            {% csrf_token %}
+                            <select name="new_role" onchange="if(this.value=='owner'){if(confirm('Transfer ownership? You will become an editor.')){this.form.submit();}else{this.value='editor';}}else{this.form.submit();}" style="padding: 4px; border-radius: 4px; border: 1px solid #d1d5db; font-size: 12px; outline: none;">
+                                <option value="viewer" {% if participant.role == 'viewer' %}selected{% endif %}>Viewer</option>
+                                <option value="editor" {% if participant.role == 'editor' %}selected{% endif %}>Editor</option>
+                                <option value="owner" {% if participant.role == 'owner' %}selected{% endif %}>Owner</option>
+                            </select>
+                        </form>
+                    {% else %}
+                        <span style="font-size: 12px; color: #6b7280; text-transform: capitalize;">{{ participant.role }}</span>
+                    {% endif %}
+                </div>
+            {% endfor %}
+
+            {% if is_owner %}
+                <div style="margin-top: 20px; border-top: 1px dashed #e5e7eb; padding-top: 15px;">
+                    <span style="font-size: 13px; font-weight: bold; color: #374151; display: block; margin-bottom: 8px;">Invite Member</span>
+                    <form method="POST" action="/boards/{{ board.id }}/invite/" style="margin: 0;">
+                        {% csrf_token %}
+                        <input type="text" name="username" placeholder="Username..." required style="width: 100%; box-sizing: border-box; padding: 8px; margin-bottom: 8px; border: 1px solid #d1d5db; border-radius: 4px; outline: none;">
+                        <div style="display: flex; gap: 5px;">
+                            <select name="role" style="flex-grow: 1; padding: 6px; border: 1px solid #d1d5db; border-radius: 4px; outline: none;">
+                                <option value="editor">Editor</option>
+                                <option value="viewer">Viewer</option>
+                            </select>
+                            <button type="submit" style="padding: 6px 14px; background: #0079bf; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">+</button>
+                        </div>
+                    </form>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        document.querySelectorAll('.task-description-clamp').forEach(el => {
+            if (el.scrollHeight > el.clientHeight) {
+                el.nextElementSibling.style.display = 'block';
+            }
+        });
+
+        const dateElements = document.querySelectorAll('.dynamic-date');
+        const now = new Date();
+        const formatOpts = { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false };
+        const isValidDate = (d) => d && d.trim() !== '' && d !== 'None';
+
+        dateElements.forEach(el => {
+            const startStr = el.getAttribute('data-start');
+            const deadStr = el.getAttribute('data-deadline');
+            const start = isValidDate(startStr) ? new Date(startStr) : null;
+            const deadline = isValidDate(deadStr) ? new Date(deadStr) : null;
+
+            if (start && start > now) {
+                el.innerHTML = `📅 Planned: ${start.toLocaleDateString('en-US', formatOpts)}`;
+                el.className = 'badge b-neutral';
+            } else if (deadline) {
+                if (deadline < now) {
+                    el.innerHTML = `⚠️ Overdue: ${deadline.toLocaleDateString('en-US', formatOpts)}`;
+                    el.className = 'badge b-danger';
+                } else {
+                    el.innerHTML = `⏳ To: ${deadline.toLocaleDateString('en-US', formatOpts)}`;
+                    el.className = 'badge b-neutral';
+                }
+            } else {
+                el.style.display = 'none';
+            }
+        });
+    });
+
+    function toggleMenu(id) {
+        document.querySelectorAll('.dropdown.active').forEach(d => { if(d.id !== 'menu-'+id) d.classList.remove('active'); });
+        document.getElementById('menu-'+id).classList.toggle('active');
+    }
+    document.addEventListener('click', e => {
+        if (!e.target.matches('.dot-btn')) { document.querySelectorAll('.dropdown.active').forEach(d => d.classList.remove('active')); }
+    });
+
+    function renameItem(type, id, oldName) {
+        const newName = prompt("Enter new name:", oldName);
+        if (newName && newName.trim() !== "" && newName !== oldName) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/rename/${type}/${id}/`;
+            form.innerHTML = `<input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="new_name" value="${newName}">`;
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+
+    const canvas = document.getElementById('boardCanvas');
+    let draggedItem = null;
+    let itemType = null;
+
+    document.querySelectorAll('.board-column').forEach(col => {
+        col.addEventListener('dragstart', (e) => {
+            if (e.target.classList.contains('kanban-card')) return;
+            draggedItem = col; itemType = 'column'; col.classList.add('dragging'); e.stopPropagation();
+        });
+        col.addEventListener('dragend', () => {
+            col.classList.remove('dragging');
+            if (itemType === 'column') {
+                const order = [...canvas.querySelectorAll('.board-column')].map(c => c.dataset.id);
+                fetch('/api/reorder/', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+                    body: JSON.stringify({ type: 'column', order: order })
+                });
+            }
+            draggedItem = null;
+        });
+    });
+
+    canvas.addEventListener('dragover', (e) => {
+        if (itemType !== 'column') return; e.preventDefault();
+        const afterElement = getDragAfterElement(canvas, e.clientX, '.board-column:not(.dragging)');
+        if (afterElement == null) { canvas.appendChild(draggedItem); } 
+        else { canvas.insertBefore(draggedItem, afterElement); }
+    });
+
+    document.querySelectorAll('.card-list').forEach(list => {
+        list.addEventListener('dragstart', (e) => {
+            const card = e.target.closest('.kanban-card');
+            if (!card) return; draggedItem = card; itemType = 'task'; card.classList.add('dragging'); e.stopPropagation();
+        });
+        list.addEventListener('dragend', (e) => {
+            const card = e.target.closest('.kanban-card');
+            if (!card) return; card.classList.remove('dragging');
+            const targetColId = card.closest('.card-list').dataset.columnId;
+            const newPos = [...card.parentElement.children].indexOf(card);
+            fetch('/api/reorder/', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+                body: JSON.stringify({ type: 'task', task_id: card.dataset.id, target_column_id: targetColId, new_position: newPos })
+            });
+            draggedItem = null;
+        });
+        list.addEventListener('dragover', (e) => {
+            if (itemType !== 'task') return; e.preventDefault();
+            const afterElement = getDragAfterElement(list, e.clientY, '.kanban-card:not(.dragging)', true);
+            if (afterElement == null) { list.appendChild(draggedItem); } 
+            else { list.insertBefore(draggedItem, afterElement); }
+        });
+    });
+
+    function getDragAfterElement(container, coord, selector, isVertical = false) {
+        const draggableElements = [...container.querySelectorAll(selector)];
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = isVertical ? (coord - box.top - box.height / 2) : (coord - box.left - box.width / 2);
+            if (offset < 0 && offset > closest.offset) { return { offset: offset, element: child }; } 
+            else { return closest; }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+</script>
 {% endblock %}

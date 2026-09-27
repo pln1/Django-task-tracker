@@ -1,31 +1,33 @@
 {% extends 'tracker/base.html' %}
 
-{% block title %}Sign up{% endblock %}
+{% block title %}Sign Up - KanbanFlow{% endblock %}
 
 {% block content %}
-    <h2>Create an Account</h2>
+<div style="max-width: 400px; margin: 40px auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+    <h2 style="text-align: center; margin-bottom: 30px; font-size: 28px; color: #1a202c;">Create Account</h2>
+    
     {% if error %}
-        <div style="background-color: #f8d7da; color: #721c24; padding: 15px; margin-bottom: 20px; border: 1px solid #f5c6cb; border-radius: 5px;">
+        <div style="background-color: #fff5f5; color: #c53030; padding: 12px; margin-bottom: 20px; border: 1px solid #feb2b2; border-radius: 6px; font-size: 14px;">
             <strong>Registration failed!</strong> {{ error }}
         </div>
     {% endif %}
 
     <form method="POST">
         {% csrf_token %}
+        <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #4a5568;">Username</label>
+        <input type="text" name="username" class="form-control" required>
+
+        <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #4a5568;">Email Address</label>
+        <input type="email" name="email" class="form-control" required>
         
-        <div style="margin-bottom: 10px;">
-            <label>Username:</label>
-            <input type="text" name="username" required>
-        </div>
-        <div style="margin-bottom: 10px;">
-            <label>Email:</label>
-            <input type="email" name="email" required>
-        </div>
-        <div style="margin-bottom: 10px;">
-            <label>Password:</label>
-            <input type="password" name="password" required>
-        </div>
+        <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #4a5568;">Password</label>
+        <input type="password" name="password" class="form-control" required>
         
-        <button type="submit">Sign up</button>
+        <button type="submit" class="btn-submit" style="margin-top: 10px; background-color: #28a745;">Sign Up</button>
     </form>
+    
+    <p style="text-align: center; margin-top: 25px; color: #718096; font-size: 14px;">
+        Already have an account? <a href="/login/" style="color: #007bff; text-decoration: none; font-weight: bold;">Log in</a>
+    </p>
+</div>
 {% endblock %}

@@ -1,33 +1,38 @@
 {% extends 'tracker/base.html' %}
 
-{% block title %}Log in{% endblock %}
+{% block title %}Log In - KanbanFlow{% endblock %}
 
 {% block content %}
-    <h2>Log in to your account</h2>
+<div style="max-width: 400px; margin: 40px auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+    <h2 style="text-align: center; margin-bottom: 30px; font-size: 28px; color: #1a202c;">Welcome Back</h2>
+    
     {% if error %}
-        <div style="background-color: #f8d7da; color: #721c24; padding: 15px; margin-bottom: 20px; border: 1px solid #f5c6cb; border-radius: 5px;">
+        <div style="background-color: #fff5f5; color: #c53030; padding: 12px; margin-bottom: 20px; border: 1px solid #feb2b2; border-radius: 6px; font-size: 14px;">
             <strong>Error!</strong> {{ error }}
-            
             {% if show_signup_link %}
-                <br>Please check your credentials or 
-                <a href="/signup/" style="color: #721c24; text-decoration: underline; font-weight: bold;">sign up</a> 
-                if you don't have an account.
+                <br>Please check your credentials or <a href="/signup/" style="color: #c53030; font-weight: bold;">sign up</a>.
             {% endif %}
         </div>
     {% endif %}
-    
+
     <form method="POST">
         {% csrf_token %}
+        <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #4a5568;">Username</label>
+        <input type="text" name="username" class="form-control" required>
         
-        <div style="margin-bottom: 10px;">
-            <label>Username:</label>
-            <input type="text" name="username" required>
-        </div>
-        <div style="margin-bottom: 10px;">
-            <label>Password:</label>
-            <input type="password" name="password" required>
-        </div>
+        <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #4a5568;">Password</label>
+        <input type="password" name="password" class="form-control" required>
         
-        <button type="submit">Log in</button>
+        <div style="text-align: right; margin-bottom: 15px;">
+            <a href="{% url 'password_reset' %}" style="color: #0079bf; text-decoration: none; font-size: 13px; font-weight: 600;">Forgot Password?</a>
+        </div>
+        <button type="submit" class="btn-submit">Log In</button>
+
+        <button type="submit" class="btn-submit" style="margin-top: 10px;">Log In</button>
     </form>
+    
+    <p style="text-align: center; margin-top: 25px; color: #718096; font-size: 14px;">
+        Don't have an account? <a href="/signup/" style="color: #007bff; text-decoration: none; font-weight: bold;">Sign up</a>
+    </p>
+</div>
 {% endblock %}

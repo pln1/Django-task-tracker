@@ -1,0 +1,56 @@
+{% extends 'tracker/base.html' %}
+{% block title %}Edit Task - KanbanFlow{% endblock %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 40px auto; background: white; border-radius: 8px; padding: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+    <h2 style="margin-top: 0; color: #172b4d;">Edit Task</h2>
+    
+    {% if error %}
+        <div style="background: #fee2e2; color: #dc2626; padding: 12px; border-radius: 6px; margin-bottom: 20px; font-weight: 500;">
+            ⚠️ {{ error }}
+        </div>
+    {% endif %}
+    
+    <form method="POST" id="taskForm">
+        {% csrf_token %}
+        
+        <div style="margin-bottom: 15px;">
+            <label style="display: block; font-weight: bold; margin-bottom: 5px; color: #4b5563;">Task Name</label>
+            <input type="text" name="name" value="{{ task.name }}" required style="width: 100%; padding: 10px; box-sizing: border-box; border-radius: 4px; border: 1px solid #d1d5db; outline: none;">
+        </div>
+        
+        <div style="margin-bottom: 15px;">
+            <label style="display: block; font-weight: bold; margin-bottom: 5px; color: #4b5563;">Description</label>
+            <textarea name="description" rows="5" style="width: 100%; padding: 10px; box-sizing: border-box; border-radius: 4px; border: 1px solid #d1d5db; outline: none;">{{ task.description|default_if_none:'' }}</textarea>
+        </div>
+        
+        <div style="display: flex; gap: 15px; margin-bottom: 25px;">
+            <div style="flex: 1;">
+                <label style="display: block; font-weight: bold; margin-bottom: 5px; color: #4b5563;">Start Date</label>
+                <input type="datetime-local" id="start_date" name="start_date" value="{{ task.start_date|date:'Y-m-d\TH:i' }}" style="width: 100%; padding: 10px; box-sizing: border-box; border-radius: 4px; border: 1px solid #d1d5db; outline: none;">
+            </div>
+            <div style="flex: 1;">
+                <label style="display: block; font-weight: bold; margin-bottom: 5px; color: #4b5563;">Deadline</label>
+                <input type="datetime-local" id="deadline" name="deadline" value="{{ task.deadline|date:'Y-m-d\TH:i' }}" style="width: 100%; padding: 10px; box-sizing: border-box; border-radius: 4px; border: 1px solid #d1d5db; outline: none;">
+            </div>
+        </div>
+        
+        <div style="display: flex; gap: 10px;">
+            <button type="submit" style="background: #0079bf; color: white; border: none; padding: 10px 24px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px;">Save Changes</button>
+            <a href="{% url 'board_detail' task.column.board.id %}" style="padding: 10px 24px; background: #e9eaee; color: #172b4d; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 14px;">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<script>
+    document.getElementById('taskForm').addEventListener('submit', function(e) {
+        const start = document.getElementById('start_date').value;
+        const end = document.getElementById('deadline').value;
+        
+        if (start && end && start > end) {
+            e.preventDefault();
+            alert('Start date cannot be later than the deadline!');
+        }
+    });
+</script>
+{% endblock %}
