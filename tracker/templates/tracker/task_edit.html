@@ -1,15 +1,9 @@
 {% extends 'tracker/base.html' %}
-{% block title %}Edit Task - KanbanFlow{% endblock %}
+{% block title %}Edit Task - BjFlow{% endblock %}
 
 {% block content %}
 <div style="max-width: 600px; margin: 40px auto; background: white; border-radius: 8px; padding: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
     <h2 style="margin-top: 0; color: #172b4d;">Edit Task</h2>
-    
-    {% if error %}
-        <div style="background: #fee2e2; color: #dc2626; padding: 12px; border-radius: 6px; margin-bottom: 20px; font-weight: 500;">
-            ⚠️ {{ error }}
-        </div>
-    {% endif %}
     
     <form method="POST" id="taskForm">
         {% csrf_token %}
@@ -27,11 +21,13 @@
         <div style="display: flex; gap: 15px; margin-bottom: 25px;">
             <div style="flex: 1;">
                 <label style="display: block; font-weight: bold; margin-bottom: 5px; color: #4b5563;">Start Date</label>
-                <input type="datetime-local" id="start_date" name="start_date" value="{{ task.start_date|date:'Y-m-d\TH:i' }}" style="width: 100%; padding: 10px; box-sizing: border-box; border-radius: 4px; border: 1px solid #d1d5db; outline: none;">
+                <input type="datetime-local" id="start_local" style="width: 100%; padding: 10px; box-sizing: border-box; border-radius: 4px; border: 1px solid #d1d5db; outline: none;">
+                <input type="hidden" name="start_date" id="start_hidden">
             </div>
             <div style="flex: 1;">
                 <label style="display: block; font-weight: bold; margin-bottom: 5px; color: #4b5563;">Deadline</label>
-                <input type="datetime-local" id="deadline" name="deadline" value="{{ task.deadline|date:'Y-m-d\TH:i' }}" style="width: 100%; padding: 10px; box-sizing: border-box; border-radius: 4px; border: 1px solid #d1d5db; outline: none;">
+                <input type="datetime-local" id="deadline_local" style="width: 100%; padding: 10px; box-sizing: border-box; border-radius: 4px; border: 1px solid #d1d5db; outline: none;">
+                <input type="hidden" name="deadline" id="deadline_hidden">
             </div>
         </div>
         
@@ -43,14 +39,31 @@
 </div>
 
 <script>
+    const dbStart = "{{ task.start_date|date:'c' }}";
+    const dbDeadline = "{{ task.deadline|date:'c' }}";
+
+    function formatForLocalInput(isoStr) {
+        if (!isoStr || isoStr === "None" || isoStr.trim() === "") return "";
+        const d = new Date(isoStr);
+        const pad = n => n.toString().padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    document.getElementById('start_local').value = formatForLocalInput(dbStart);
+    document.getElementById('deadline_local').value = formatForLocalInput(dbDeadline);
+
     document.getElementById('taskForm').addEventListener('submit', function(e) {
-        const start = document.getElementById('start_date').value;
-        const end = document.getElementById('deadline').value;
-        
-        if (start && end && start > end) {
+        const startVal = document.getElementById('start_local').value;
+        const deadVal = document.getElementById('deadline_local').value;
+
+        if (startVal && deadVal && startVal > deadVal) {
             e.preventDefault();
             alert('Start date cannot be later than the deadline!');
+            return;
         }
+
+        document.getElementById('start_hidden').value = startVal ? new Date(startVal).toISOString() : "";
+        document.getElementById('deadline_hidden').value = deadVal ? new Date(deadVal).toISOString() : "";
     });
 </script>
 {% endblock %}

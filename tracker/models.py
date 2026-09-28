@@ -63,6 +63,7 @@ class Task(models.Model):
     deadline = models.DateTimeField(blank=True, null=True)
     status = models.BooleanField(default=False)
     position = models.IntegerField(default=0)
+    completed_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ["position"]
@@ -83,28 +84,9 @@ class Task(models.Model):
         return False
 
 
-class BoardInvitation(models.Model):
-    board = models.ForeignKey(
-        KBBoard, on_delete=models.CASCADE, related_name="invitations"
-    )
-    sender = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="sent_invites"
-    )
-    receiver = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="received_invites"
-    )
-
-    role = models.CharField(max_length=20, default="editor")
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"Invite to {self.receiver.username} for {self.board.name}"
-
-
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
     bio = models.TextField(blank=True, null=True)
-    # Зображення будуть зберігатися в папці media/avatars/
     avatar = models.ImageField(upload_to="avatars/", blank=True, null=True)
 
     def __str__(self):
@@ -120,3 +102,22 @@ def create_user_profile(sender, instance, created, **kwargs):
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
     UserProfile.objects.get_or_create(user=instance)
+
+
+class BoardInvitation(models.Model):
+    board = models.ForeignKey(
+        KBBoard, on_delete=models.CASCADE, related_name="invitations"
+    )
+    inviter = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="sent_invites"
+    )
+    invitee = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="received_invites"
+    )
+    role = models.CharField(
+        max_length=20, choices=[("viewer", "Viewer"), ("editor", "Editor")]
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Invite for {self.invitee.username} to {self.board.name}"

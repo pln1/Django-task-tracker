@@ -1,109 +1,57 @@
 {% extends 'tracker/base.html' %}
-{% block title %}{{ board.name }} - KanbanFlow{% endblock %}
+{% block title %}{{ board.name }} - BjFlow{% endblock %}
 
 {% block content %}
 <style>
     body, html { overflow: hidden !important; margin: 0; padding: 0; height: 100vh; background-color: #f4f5f7; } 
     
-    .page-wrapper {
-        position: fixed;
-        top: 65px; 
-        left: 0;
-        right: 0;
-        bottom: 0;
-        display: flex; 
-        gap: 15px; 
-        padding: 10px 15px 15px 15px;
-        box-sizing: border-box;
-    }
+    .page-wrapper { position: fixed; top: 65px; left: 0; right: 0; bottom: 0; display: flex; gap: 15px; padding: 10px 15px 15px 15px; box-sizing: border-box; }
     
-    .board-root {
-        flex: 1 1 auto; 
-        min-width: 0; 
-        background: linear-gradient(180deg, #0079bf, #005a8f);
-        border-radius: 8px; 
-        display: flex; 
-        flex-direction: column; 
-        box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
-        height: 100%;
-    }
+    .board-root { flex: 1 1 auto; min-width: 0; background: linear-gradient(135deg, #0079bf 0%, #4eb1f0 100%); border-radius: 8px; display: flex; flex-direction: column; box-shadow: 0 4px 10px rgba(0,0,0,0.1); height: 100%; }
 
-    .board-navbar {
-        padding: 10px 16px; 
-        display: flex; justify-content: space-between;
-        align-items: center; 
-        background: rgba(0, 0, 0, 0.2); 
-        color: white; 
-        flex-shrink: 0;
-        border-radius: 8px 8px 0 0;
-        gap: 15px;
-    }
-    
-    .board-navbar h2 { 
-        font-size: 18px; margin: 0; font-weight: 700; 
-        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 600px;
-    }
+    .board-navbar { padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; background: rgba(0, 0, 0, 0.2); color: white; flex-shrink: 0; border-radius: 8px 8px 0 0; gap: 15px; }
+    .board-navbar h2 { font-size: 18px; margin: 0; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 600px; }
 
-    .board-scroll-area {
-        flex: 1 1 auto; min-height: 0; 
-        display: flex; gap: 12px; padding: 12px 16px;
-        overflow-x: auto; overflow-y: hidden; 
-        align-items: flex-start; 
-    }
-    
+    .board-scroll-area { flex: 1 1 auto; min-height: 0; display: flex; gap: 12px; padding: 12px 16px; overflow-x: auto; overflow-y: hidden; align-items: flex-start; }
     .board-scroll-area::-webkit-scrollbar { height: 14px; }
     .board-scroll-area::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.5); border-radius: 7px; border: 2px solid transparent; background-clip: padding-box; }
     .board-scroll-area::-webkit-scrollbar-track { background: rgba(0,0,0,0.15); border-radius: 7px; margin: 0 16px; }
 
-    .board-column {
-        flex: 0 0 272px; width: 272px; max-height: 100%;
-        background: #ebecf0; border-radius: 8px; display: flex; flex-direction: column; cursor: grab;
-    }
+    .board-column { flex: 0 0 272px; width: 272px; max-height: 100%; background: #ebecf0; border-radius: 8px; display: flex; flex-direction: column; cursor: grab; }
     .board-column.dragging { opacity: 0.5; }
-    
-    /* Обрізка довгої назви колонки */
+
     .column-header { padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; color: #172b4d; flex-shrink: 0; }
     .column-header span.col-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-grow: 1; margin-right: 8px; }
 
-    .card-list {
-        flex: 1 1 auto; padding: 0 8px; overflow-y: auto; overflow-x: hidden;
-        display: flex; flex-direction: column; gap: 8px; min-height: 5px;
-    }
+    .card-list { flex: 1 1 auto; padding: 0 8px; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; gap: 8px; min-height: 5px; }
     .card-list::-webkit-scrollbar { width: 6px; }
     .card-list::-webkit-scrollbar-thumb { background: #c1c7d0; border-radius: 3px; }
 
-    .kanban-card {
-        background: #ffffff; border-radius: 8px; padding: 10px; box-shadow: 0 1px 2px rgba(9,30,66,0.15);
-        color: #172b4d; cursor: grab; border-left: 4px solid transparent;
-    }
+    .kanban-card { background: #ffffff; border-radius: 8px; padding: 10px; box-shadow: 0 1px 2px rgba(9,30,66,0.15); color: #172b4d; cursor: grab; border-left: 4px solid transparent; }
     .kanban-card:hover { border-color: #0079bf; }
     .kanban-card.dragging { opacity: 0.5; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
-    .kanban-card.is-done { border-left-color: #22c55e; background-color: #f0fdf4; opacity: 0.8; }
     
+
     .task-name-text { font-size: 14px; font-weight: 500; word-break: break-word; overflow-wrap: anywhere; }
     .task-name-text.done { text-decoration: line-through; color: #6b7280; }
 
-    .task-description-clamp {
-        display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2;
-        -webkit-box-orient: vertical; overflow: hidden;
-        white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere; 
-        line-height: 1.4; color: #4b5563; font-size: 12px;
-    }
+    .task-description-clamp { display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere; line-height: 1.4; color: #4b5563; font-size: 12px; }
     .task-description-clamp.expanded { display: block; overflow: visible; -webkit-line-clamp: unset; line-clamp: unset; }
-    .more-btn, .less-btn { color: #0079bf; cursor: pointer; display: inline-block; margin-top: 4px; font-weight: 500; font-size: 12px; }
+
 
     .column-footer { padding: 8px; flex-shrink: 0; }
     .column-footer input { width: 100%; box-sizing: border-box; border: none; padding: 8px; border-radius: 6px; background: transparent; outline: none; cursor: pointer; }
     .column-footer input:focus { background: white; box-shadow: 0 1px 2px rgba(0,0,0,0.1); cursor: text; }
 
-    .sidebar {
-        flex: 0 0 300px; width: 300px; background: white; border-radius: 8px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; 
-        height: 100%; overflow: hidden;
-    }
+    .add-list-form { background: rgba(255, 255, 255, 0.24); border-radius: 8px; padding: 8px; margin: 0; transition: background 0.2s; }
+    .add-list-form:hover { background: rgba(255, 255, 255, 0.32); }
+    .add-list-input { width: 100%; box-sizing: border-box; border: none; background: transparent; color: white; font-weight: 500; font-size: 14px; outline: none; padding: 4px; }
+    .add-list-input::placeholder { color: rgba(255, 255, 255, 0.9); font-weight: 500; }
+
+    .sidebar { flex: 0 0 320px; width: 320px; background: white; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; height: 100%; overflow: hidden; }
     .sidebar-header { padding: 12px 16px; border-bottom: 1px solid #edf2f7; font-weight: bold; background: #f8fafc; }
     .sidebar-content { padding: 16px; overflow-y: auto; flex: 1; font-size: 14px; }
-    .participant-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #edf2f7; }
+    .participant-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #edf2f7; gap: 10px; }
 
     .dropdown { position: relative; }
     .dot-btn { background: none; border: none; font-size: 16px; cursor: pointer; color: #5e6c84; padding: 2px 6px; }
@@ -119,6 +67,26 @@
     .b-neutral { background: #f1f5f9; color: #475569; }
 </style>
 
+{% if messages %}
+<style>
+    .toast-error { background-color: #ef4444; }
+    .toast-success { background-color: #10b981; }
+</style>
+<div id="toast-container" style="position: absolute; top: 75px; right: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 10px;">
+    {% for message in messages %}
+    <div class="toast-message {% if message.tags == 'error' %}toast-error{% else %}toast-success{% endif %}" style="padding: 12px 20px; border-radius: 6px; color: white; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+        {{ message }}
+    </div>
+    {% endfor %}
+</div>
+<script>
+    setTimeout(() => {
+        const toast = document.getElementById('toast-container');
+        if (toast) { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }
+    }, 4000);
+</script>
+{% endif %}
+
 <div class="page-wrapper">
     <div class="board-root">
         <div class="board-navbar">
@@ -127,11 +95,16 @@
                 <button class="dot-btn" style="color: white;" onclick="toggleMenu('board')">⋯</button>
                 <div class="dropdown-menu">
                     {% if is_owner %}
-                    <button onclick="renameItem('board', '{{ board.id }}', '{{ board.name|escapejs }}')">Rename Board</button>
-                    <form method="POST" action="/boards/{{ board.id }}/delete/" style="margin: 0;">
-                        {% csrf_token %}
-                        <button type="submit" class="danger">Delete Board</button>
-                    </form>
+                        <button onclick="renameItem('board', '{{ board.id }}', '{{ board.name|escapejs }}')">Rename Board</button>
+                        <form method="POST" action="/boards/{{ board.id }}/delete/" style="margin: 0;" onsubmit="return confirm('Delete this workspace permanently?');">
+                            {% csrf_token %}
+                            <button type="submit" class="danger">Delete Board</button>
+                        </form>
+                    {% else %}
+                        <form method="POST" action="{% url 'leave_board' board.id %}" style="margin: 0;" onsubmit="return confirm('Are you sure you want to leave this workspace?');">
+                            {% csrf_token %}
+                            <button type="submit" class="danger">Leave Board</button>
+                        </form>
                     {% endif %}
                 </div>
             </div>
@@ -158,18 +131,15 @@
 
                     <div class="card-list" data-column-id="{{ column.id }}">
                         {% for task in column.tasks.all|dictsort:"position" %}
-                            <div class="kanban-card {% if task.status %}is-done{% endif %}" draggable="true" data-id="{{ task.id }}">
+                            <div class="kanban-card" draggable="true" data-id="{{ task.id }}">
                                 <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                                     <div style="display: flex; gap: 8px; flex-grow: 1; align-items: flex-start;">
                                         {% if can_edit %}
-                                        <form method="POST" action="/tasks/{{ task.id }}/toggle/" style="margin: 0;">
-                                            {% csrf_token %}
-                                            <input type="checkbox" onchange="this.form.submit()" {% if task.status %}checked{% endif %} style="margin-top: 2px;">
-                                        </form>
+                                        <input type="checkbox" onchange="toggleTaskAjax('{{ task.id }}', this)" {% if task.status %}checked{% endif %} style="margin-top: 2px;">
                                         {% endif %}
                                         <span class="task-name-text {% if task.status %}done{% endif %}">{{ task.name }}</span>
                                     </div>
-                                    
+
                                     {% if can_edit %}
                                     <div class="dropdown" id="menu-task-{{ task.id }}">
                                         <button class="dot-btn" onclick="toggleMenu('task-{{ task.id }}')">⋯</button>
@@ -189,24 +159,19 @@
                                 <div style="margin-top: 10px;">
                                     <div id="desc-{{ task.id }}" class="task-description-clamp">{{ task.description }}</div>
                                     <div class="more-less-container" style="display: none;">
-                                        <span class="more-btn" onclick="document.getElementById('desc-{{ task.id }}').classList.add('expanded'); this.style.display='none'; this.nextElementSibling.style.display='inline-block';">More</span>
-                                        <span class="less-btn" style="display: none;" onclick="document.getElementById('desc-{{ task.id }}').classList.remove('expanded'); this.style.display='none'; this.previousElementSibling.style.display='inline-block';">Less</span>
+                                        <span style="color: #0079bf; cursor: pointer; display: inline-block; margin-top: 4px; font-weight: 500; font-size: 12px;" onclick="document.getElementById('desc-{{ task.id }}').classList.add('expanded'); this.style.display='none'; this.nextElementSibling.style.display='inline-block';">More</span>
+                                        <span style="display: none; color: #0079bf; cursor: pointer; margin-top: 4px; font-weight: 500; font-size: 12px;" onclick="document.getElementById('desc-{{ task.id }}').classList.remove('expanded'); this.style.display='none'; this.previousElementSibling.style.display='inline-block';">Less</span>
                                     </div>
                                 </div>
                                 {% endif %}
 
-                                {% if task.deadline or task.start_date %}
-                                <div>
-                                    {% if task.status %}
-                                        <span class="badge b-success">✅ Done: {{ task.deadline|date:"M d, H:i" }}</span>
-                                    {% else %}
-                                        <span class="badge dynamic-date" 
-                                              data-start="{% if task.start_date %}{{ task.start_date|date:'c' }}{% endif %}" 
-                                              data-deadline="{% if task.deadline %}{{ task.deadline|date:'c' }}{% endif %}">
-                                        </span>
-                                    {% endif %}
+                                <div class="task-dates-container" style="display: none;"
+                                     data-status="{% if task.status %}true{% else %}false{% endif %}"
+                                     data-start="{% if task.start_date %}{{ task.start_date|date:'c' }}{% endif %}" 
+                                     data-deadline="{% if task.deadline %}{{ task.deadline|date:'c' }}{% endif %}"
+                                     data-completed="{% if task.completed_at %}{{ task.completed_at|date:'c' }}{% endif %}">
                                 </div>
-                                {% endif %}
+
                             </div>
                         {% endfor %}
                     </div>
@@ -224,9 +189,9 @@
 
             {% if can_edit %}
             <div style="min-width: 272px;">
-                <form method="POST" action="/boards/{{ board.id }}/add_column/" style="background: rgba(255,255,255,0.2); border-radius: 8px; padding: 8px; margin: 0;">
+                <form method="POST" action="/boards/{{ board.id }}/add_column/" class="add-list-form">
                     {% csrf_token %}
-                    <input type="text" name="column_name" placeholder="+ Add another list" required style="width: 100%; box-sizing: border-box; border: none; background: transparent; color: white; font-weight: bold; outline: none; padding: 4px;">
+                    <input type="text" name="column_name" placeholder="+ Add another list" required class="add-list-input">
                 </form>
             </div>
             {% endif %}
@@ -238,14 +203,23 @@
         <div class="sidebar-content">
             {% for participant in participants %}
                 <div class="participant-item">
-                    <div><strong style="color: #111827;">{{ participant.user.username }}</strong></div>
+                    <a href="{% url 'profile' participant.user.username %}" style="display: flex; align-items: center; gap: 8px; text-decoration: none; color: inherit; min-width: 0;">
+                        {% if participant.user.profile.avatar %}
+                            <img src="{{ participant.user.profile.avatar.url }}" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex-shrink: 0;">
+                        {% else %}
+                            <div style="width: 28px; height: 28px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0;">👤</div>
+                        {% endif %}
+                        <strong style="color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ participant.user.username }}</strong>
+                    </a>
+
                     {% if is_owner and participant.user != request.user %}
                         <form method="POST" action="/boards/{{ board.id }}/update_role/{{ participant.id }}/" style="margin: 0;">
                             {% csrf_token %}
-                            <select name="new_role" onchange="if(this.value=='owner'){if(confirm('Transfer ownership? You will become an editor.')){this.form.submit();}else{this.value='editor';}}else{this.form.submit();}" style="padding: 4px; border-radius: 4px; border: 1px solid #d1d5db; font-size: 12px; outline: none;">
+                            <select name="new_role" onchange="handleRoleChange(this, '{{ participant.role }}')" style="padding: 4px; border-radius: 4px; border: 1px solid #d1d5db; font-size: 12px; outline: none; max-width: 110px;">
                                 <option value="viewer" {% if participant.role == 'viewer' %}selected{% endif %}>Viewer</option>
                                 <option value="editor" {% if participant.role == 'editor' %}selected{% endif %}>Editor</option>
                                 <option value="owner" {% if participant.role == 'owner' %}selected{% endif %}>Owner</option>
+                                <option value="remove" style="color: red; font-weight: bold;">Remove</option>
                             </select>
                         </form>
                     {% else %}
@@ -253,6 +227,30 @@
                     {% endif %}
                 </div>
             {% endfor %}
+
+            {% if pending_invites %}
+            <div style="margin-top: 15px; border-top: 1px dashed #e5e7eb; padding-top: 15px;">
+                <span style="font-size: 13px; font-weight: bold; color: #b45309; display: block; margin-bottom: 8px;">⏳ Pending Invitations</span>
+                {% for invite in pending_invites %}
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #edf2f7; gap: 10px;">
+                    <div style="font-size: 14px; color: #4b5563; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><strong>{{ invite.invitee.username }}</strong></div>
+                    {% if is_owner %}
+                    <form method="POST" action="{% url 'manage_invite' invite.id %}" style="margin: 0;">
+                        {% csrf_token %}
+                        <select name="action" onchange="handleRoleChange(this, '{{ invite.role }}')" style="padding: 4px; border-radius: 4px; border: 1px solid #fcd34d; font-size: 12px; outline: none; background: #fffbeb; max-width: 110px;">
+                            <option value="viewer" {% if invite.role == 'viewer' %}selected{% endif %}>Viewer</option>
+                            <option value="editor" {% if invite.role == 'editor' %}selected{% endif %}>Editor</option>
+                            <option value="owner" {% if invite.role == 'owner' %}selected{% endif %}>Owner</option>
+                            <option value="cancel" style="color: red; font-weight: bold;">Cancel</option>
+                        </select>
+                    </form>
+                    {% else %}
+                        <span style="font-size: 12px; color: #9ca3af; text-transform: capitalize;">{{ invite.role }}</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
 
             {% if is_owner %}
                 <div style="margin-top: 20px; border-top: 1px dashed #e5e7eb; padding-top: 15px;">
@@ -264,6 +262,7 @@
                             <select name="role" style="flex-grow: 1; padding: 6px; border: 1px solid #d1d5db; border-radius: 4px; outline: none;">
                                 <option value="editor">Editor</option>
                                 <option value="viewer">Viewer</option>
+                                <option value="owner">Owner</option>
                             </select>
                             <button type="submit" style="padding: 6px 14px; background: #0079bf; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">+</button>
                         </div>
@@ -275,38 +274,89 @@
 </div>
 
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        document.querySelectorAll('.task-description-clamp').forEach(el => {
-            if (el.scrollHeight > el.clientHeight) {
-                el.nextElementSibling.style.display = 'block';
+    function handleRoleChange(selectElement, originalRole) {
+        const val = selectElement.value;
+        if (val === 'owner') {
+            if (confirm('Are you sure you want to transfer ownership?')) {
+                selectElement.form.submit();
+            } else {
+                selectElement.value = originalRole;
+            }
+        } else if (val === 'remove') {
+            if (confirm('Are you sure you want to remove this user from the board?')) {
+                selectElement.form.submit();
+            } else {
+                selectElement.value = originalRole;
+            }
+        } else if (val === 'cancel') {
+            if (confirm('Are you sure you want to cancel this invitation?')) {
+                selectElement.form.submit();
+            } else {
+                selectElement.value = originalRole;
+            }
+        } else {
+            selectElement.form.submit();
+        }
+    }
+
+    function toggleTaskAjax(taskId, checkboxElement) {
+        fetch(`/tasks/${taskId}/toggle/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': '{{ csrf_token }}', 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.status === 'ok') {
+                const textSpan = checkboxElement.nextElementSibling;
+                if(data.is_done) { textSpan.classList.add('done'); } else { textSpan.classList.remove('done'); }
+                
+                const dateContainer = checkboxElement.closest('.kanban-card').querySelector('.task-dates-container');
+                if (dateContainer) {
+                    dateContainer.setAttribute('data-status', data.is_done ? 'true' : 'false');
+                    dateContainer.setAttribute('data-completed', data.completed_at || '');
+                    renderDates();
+                }
             }
         });
+    }
 
-        const dateElements = document.querySelectorAll('.dynamic-date');
+    function renderDates() {
+        const dateElements = document.querySelectorAll('.task-dates-container');
         const now = new Date();
         const formatOpts = { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false };
         const isValidDate = (d) => d && d.trim() !== '' && d !== 'None';
 
         dateElements.forEach(el => {
+            const isDone = el.getAttribute('data-status') === 'true';
             const startStr = el.getAttribute('data-start');
             const deadStr = el.getAttribute('data-deadline');
+            const compStr = el.getAttribute('data-completed');
+            
             const start = isValidDate(startStr) ? new Date(startStr) : null;
             const deadline = isValidDate(deadStr) ? new Date(deadStr) : null;
+            const completed = isValidDate(compStr) ? new Date(compStr) : null;
+
+            if (isDone) {
+                if (completed) { el.innerHTML = `<span class="badge b-success">✅ Done: ${completed.toLocaleDateString('en-US', formatOpts)}</span>`; } 
+                else { el.innerHTML = `<span class="badge b-success">✅ Done</span>`; }
+                el.style.display = 'block'; return;
+            }
 
             if (start && start > now) {
-                el.innerHTML = `📅 Planned: ${start.toLocaleDateString('en-US', formatOpts)}`;
-                el.className = 'badge b-neutral';
+                el.innerHTML = `<span class="badge b-neutral">📅 Planned: ${start.toLocaleDateString('en-US', formatOpts)}</span>`; el.style.display = 'block';
             } else if (deadline) {
-                if (deadline < now) {
-                    el.innerHTML = `⚠️ Overdue: ${deadline.toLocaleDateString('en-US', formatOpts)}`;
-                    el.className = 'badge b-danger';
-                } else {
-                    el.innerHTML = `⏳ To: ${deadline.toLocaleDateString('en-US', formatOpts)}`;
-                    el.className = 'badge b-neutral';
-                }
-            } else {
-                el.style.display = 'none';
-            }
+                if (deadline < now) { el.innerHTML = `<span class="badge b-danger">⚠️ Overdue: ${deadline.toLocaleDateString('en-US', formatOpts)}</span>`; } 
+                else { el.innerHTML = `<span class="badge b-neutral">⏳ To: ${deadline.toLocaleDateString('en-US', formatOpts)}</span>`; }
+                el.style.display = 'block';
+            } else { el.innerHTML = ''; el.style.display = 'none'; }
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        renderDates();
+        document.querySelectorAll('.task-description-clamp').forEach(el => {
+            if (el.scrollHeight > el.clientHeight) { el.nextElementSibling.style.display = 'block'; }
         });
     });
 
@@ -322,11 +372,9 @@
         const newName = prompt("Enter new name:", oldName);
         if (newName && newName.trim() !== "" && newName !== oldName) {
             const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = `/rename/${type}/${id}/`;
+            form.method = 'POST'; form.action = `/rename/${type}/${id}/`;
             form.innerHTML = `<input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="new_name" value="${newName}">`;
-            document.body.appendChild(form);
-            form.submit();
+            document.body.appendChild(form); form.submit();
         }
     }
 
@@ -343,11 +391,7 @@
             col.classList.remove('dragging');
             if (itemType === 'column') {
                 const order = [...canvas.querySelectorAll('.board-column')].map(c => c.dataset.id);
-                fetch('/api/reorder/', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
-                    body: JSON.stringify({ type: 'column', order: order })
-                });
+                fetch('/api/reorder/', { method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'}, body: JSON.stringify({ type: 'column', order: order }) });
             }
             draggedItem = null;
         });
@@ -356,8 +400,7 @@
     canvas.addEventListener('dragover', (e) => {
         if (itemType !== 'column') return; e.preventDefault();
         const afterElement = getDragAfterElement(canvas, e.clientX, '.board-column:not(.dragging)');
-        if (afterElement == null) { canvas.appendChild(draggedItem); } 
-        else { canvas.insertBefore(draggedItem, afterElement); }
+        if (afterElement == null) { canvas.appendChild(draggedItem); } else { canvas.insertBefore(draggedItem, afterElement); }
     });
 
     document.querySelectorAll('.card-list').forEach(list => {
@@ -370,18 +413,13 @@
             if (!card) return; card.classList.remove('dragging');
             const targetColId = card.closest('.card-list').dataset.columnId;
             const newPos = [...card.parentElement.children].indexOf(card);
-            fetch('/api/reorder/', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
-                body: JSON.stringify({ type: 'task', task_id: card.dataset.id, target_column_id: targetColId, new_position: newPos })
-            });
+            fetch('/api/reorder/', { method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'}, body: JSON.stringify({ type: 'task', task_id: card.dataset.id, target_column_id: targetColId, new_position: newPos }) });
             draggedItem = null;
         });
         list.addEventListener('dragover', (e) => {
             if (itemType !== 'task') return; e.preventDefault();
             const afterElement = getDragAfterElement(list, e.clientY, '.kanban-card:not(.dragging)', true);
-            if (afterElement == null) { list.appendChild(draggedItem); } 
-            else { list.insertBefore(draggedItem, afterElement); }
+            if (afterElement == null) { list.appendChild(draggedItem); } else { list.insertBefore(draggedItem, afterElement); }
         });
     });
 
@@ -390,8 +428,7 @@
         return draggableElements.reduce((closest, child) => {
             const box = child.getBoundingClientRect();
             const offset = isVertical ? (coord - box.top - box.height / 2) : (coord - box.left - box.width / 2);
-            if (offset < 0 && offset > closest.offset) { return { offset: offset, element: child }; } 
-            else { return closest; }
+            if (offset < 0 && offset > closest.offset) { return { offset: offset, element: child }; } else { return closest; }
         }, { offset: Number.NEGATIVE_INFINITY }).element;
     }
 </script>

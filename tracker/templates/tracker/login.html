@@ -1,6 +1,6 @@
 {% extends 'tracker/base.html' %}
 
-{% block title %}Log In - KanbanFlow{% endblock %}
+{% block title %}Log In - BjFlow{% endblock %}
 
 {% block content %}
 <div style="max-width: 400px; margin: 40px auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
@@ -24,9 +24,8 @@
         <input type="password" name="password" class="form-control" required>
         
         <div style="text-align: right; margin-bottom: 15px;">
-            <a href="{% url 'password_reset' %}" style="color: #0079bf; text-decoration: none; font-size: 13px; font-weight: 600;">Forgot Password?</a>
+            <a href="#" style="color: #0079bf; text-decoration: none; font-size: 13px; font-weight: 600;">Forgot Password?</a>
         </div>
-        <button type="submit" class="btn-submit">Log In</button>
 
         <button type="submit" class="btn-submit" style="margin-top: 10px;">Log In</button>
     </form>

@@ -1,22 +1,119 @@
 {% extends 'tracker/base.html' %}
-{% block title %}My Workspaces - KanbanFlow{% endblock %}
+{% block title %}My Workspaces - BjFlow{% endblock %}
 
 {% block content %}
-<div style="max-width: 1000px; margin: 40px auto; padding: 0 20px;">
-    <h2 style="font-size: 24px; color: #172b4d; margin-bottom: 24px;">My Workspaces</h2>
+<style>
+    .boards-container { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 16px; }
     
-    <div style="display: flex; gap: 16px; flex-wrap: wrap;">
-        {% for board in boards %}
-            <a href="{% url 'board_detail' board.id %}" style="display: block; width: 220px; height: 120px; background: #0079bf; border-radius: 8px; padding: 12px; text-decoration: none; color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: opacity 0.2s;">
-                <div style="font-weight: bold; font-size: 16px; word-break: break-word; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 4; line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;">
-                    {{ board.name }}
-                </div>
-            </a>
+    .board-card {
+        position: relative; width: 220px; height: 120px; background: #0079bf; 
+        border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+        transition: background 0.2s, transform 0.2s;
+    }
+    .board-card:hover { background: #005a8f; transform: translateY(-2px); }
+    .board-link { display: block; width: 100%; height: 100%; padding: 16px; box-sizing: border-box; text-decoration: none; color: white; }
+    .board-title { font-weight: bold; font-size: 16px; word-break: break-word; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; padding-right: 20px; }
+
+    .dropdown { position: absolute; top: 12px; right: 10px; }
+    .dot-btn { background: none; border: none; font-size: 18px; cursor: pointer; color: rgba(255,255,255,0.7); padding: 0 6px; line-height: 1; border-radius: 4px; }
+    .dot-btn:hover { color: white; background: rgba(0,0,0,0.2); }
+    .dropdown-menu { display: none; position: absolute; right: 0; top: 100%; background: white; min-width: 150px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border-radius: 6px; z-index: 100; overflow: hidden; }
+    .dropdown.active .dropdown-menu { display: block; }
+    .dropdown-menu button { display: block; width: 100%; text-align: left; padding: 10px 12px; border: none; background: none; font-size: 13px; font-weight: 500; cursor: pointer; color: #172b4d; }
+    .dropdown-menu button:hover { background: #f4f5f7; }
+    .danger { color: #dc2626 !important; }
+
+    .create-board-btn { display: flex; align-items: center; justify-content: center; width: 220px; height: 120px; background: #e9eaee; border-radius: 8px; text-decoration: none; color: #5e6c84; font-size: 24px; transition: background 0.2s; }
+    .create-board-btn:hover { background: #dfe1e6; color: #172b4d; }
+
+    .invite-card { width: 280px; background: #fff8e1; border: 2px dashed #f59e0b; border-radius: 8px; padding: 15px; box-sizing: border-box; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 10px; }
+    .invite-btn { flex: 1; padding: 8px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; color: white; }
+</style>
+
+<div style="max-width: 1000px; margin: 40px auto; padding: 0 20px;">
+    
+    {% if invitations %}
+    <h2 style="font-size: 20px; color: #b45309; margin: 0 0 10px 0;">Pending Invitations</h2>
+    <div class="boards-container" style="margin-bottom: 40px;">
+        {% for invite in invitations %}
+        <div class="invite-card">
+            <div style="font-size: 18px; font-weight: 700; color: #172b4d; word-break: break-word;">{{ invite.board.name }}</div>
+            <div style="font-size: 13px; color: #4b5563; line-height: 1.5;">
+                <strong>From:</strong> {{ invite.inviter.username }}<br>
+                <strong>Role:</strong> <span style="text-transform: capitalize; color: #0079bf; font-weight: bold;">{{ invite.role }}</span><br>
+                <span class="invite-date" data-date="{{ invite.created_at|date:'c' }}"></span>
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: auto;">
+                <form method="POST" action="{% url 'respond_invite' invite.id 'accept' %}" style="flex: 1; margin: 0;">
+                    {% csrf_token %}<button type="submit" class="invite-btn" style="background: #10b981; width: 100%;">Accept</button>
+                </form>
+                <form method="POST" action="{% url 'respond_invite' invite.id 'decline' %}" style="flex: 1; margin: 0;">
+                    {% csrf_token %}<button type="submit" class="invite-btn" style="background: #ef4444; width: 100%;">Decline</button>
+                </form>
+            </div>
+        </div>
         {% endfor %}
-        
-        <a href="{% url 'create_board' %}" style="display: flex; align-items: center; justify-content: center; width: 220px; height: 120px; background: #e9eaee; border-radius: 8px; text-decoration: none; color: #5e6c84; font-size: 24px; transition: background 0.2s;">
-            +
-        </a>
+    </div>
+    {% endif %}
+
+    <h2 style="font-size: 24px; color: #172b4d; margin: 0;">My Workspaces</h2>
+    
+    <div class="boards-container">
+        {% for item in boards_info %}
+            <div class="board-card">
+                <a href="{% url 'board_detail' item.board.id %}" class="board-link">
+                    <div class="board-title" title="{{ item.board.name }}">{{ item.board.name }}</div>
+                </a>
+                
+                <div class="dropdown" id="menu-board-{{ item.board.id }}">
+                    <button class="dot-btn" onclick="toggleMenu('board-{{ item.board.id }}', event)">⋯</button>
+                    <div class="dropdown-menu">
+                        {% if item.is_owner %}
+                            <button onclick="renameBoard('{{ item.board.id }}', '{{ item.board.name|escapejs }}', event)">Rename Board</button>
+                            <form method="POST" action="/boards/{{ item.board.id }}/delete/" style="margin: 0;" onsubmit="return confirm('Delete this workspace permanently?');">
+                                {% csrf_token %}
+                                <button type="submit" class="danger">Delete Board</button>
+                            </form>
+                        {% else %}
+                            <form method="POST" action="{% url 'leave_board' item.board.id %}" style="margin: 0;" onsubmit="return confirm('Are you sure you want to leave this workspace?');">
+                                {% csrf_token %}
+                                <button type="submit" class="danger">Leave Board</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+                
+            </div>
+        {% endfor %}
+        <a href="{% url 'create_board' %}" class="create-board-btn" title="Create new workspace">+</a>
     </div>
 </div>
+
+<script>
+    document.querySelectorAll('.invite-date').forEach(el => {
+        const d = new Date(el.getAttribute('data-date'));
+        const opts = { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+        el.innerHTML = `⏱️ ${d.toLocaleDateString('en-US', opts)}`;
+    });
+
+    function toggleMenu(id, event) {
+        event.preventDefault(); event.stopPropagation();
+        document.querySelectorAll('.dropdown.active').forEach(d => { if(d.id !== 'menu-' + id) d.classList.remove('active'); });
+        document.getElementById('menu-' + id).classList.toggle('active');
+    }
+    document.addEventListener('click', e => {
+        if (!e.target.matches('.dot-btn')) { document.querySelectorAll('.dropdown.active').forEach(d => d.classList.remove('active')); }
+    });
+
+    function renameBoard(id, oldName, event) {
+        event.preventDefault(); event.stopPropagation();
+        const newName = prompt("Enter new workspace name:", oldName);
+        if (newName && newName.trim() !== "" && newName !== oldName) {
+            const form = document.createElement('form');
+            form.method = 'POST'; form.action = `/rename/board/${id}/`;
+            form.innerHTML = `<input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="new_name" value="${newName}">`;
+            document.body.appendChild(form); form.submit();
+        }
+    }
+</script>
 {% endblock %}

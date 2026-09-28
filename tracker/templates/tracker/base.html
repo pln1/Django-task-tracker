@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}KanbanFlow{% endblock %}</title>
+    <title>{% block title %}BjFlow{% endblock %}</title>
     <style>
         body {
             font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -95,7 +95,6 @@
             background-color: #f7fafc;
         }
 
-        /* Глобальні стилі для форм */
         .form-control {
             width: 100%;
             padding: 10px 12px;
@@ -141,7 +140,7 @@
 </head>
 <body>
     <nav class="navbar" style="height: 65px; box-sizing: border-box;">
-        <a href="/" class="navbar-brand">KanbanFlow</a>
+        <a href="/" class="navbar-brand">BjFlow</a>
         <div class="nav-links">
             {% if user.is_authenticated %}
                 <a href="/boards/" style="font-weight: 600;">Workspaces</a>
@@ -150,7 +149,7 @@
                         {% if user.profile and user.profile.avatar %}
                         <img src="{{ user.profile.avatar.url }}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;">
                         {% else %}
-                        <span style="font-size: 16px;">👤</span>
+                        <span style="font-size: 16px;"></span>
                         {% endif %}
                         {{ user.username }}
                     </a>
