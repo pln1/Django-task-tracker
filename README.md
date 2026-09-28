@@ -1,6 +1,6 @@
 # BjFlow
 
-A task management platform built with Django. Designed to streamline team collaboration through intuitive drag-and-drop workflows and real-time updates.
+A task management platform built with Django. Designed to streamline team collaboration through intuitive interface and real-time updates.
 
 ## Tech Stack
 
@@ -43,10 +43,10 @@ Open your browser and navigate to http://localhost:8000
    ```
 
 ### Author
-Oleksandr Polonskiy
+Oleksandr Polonskyi
 
 Software Engineer | Student at KPI (FICE)
 
 GitHub: @pln1
 
-LinkedIn: Oleksandr Polonskiy
+LinkedIn: Oleksandr Polonskyi
